@@ -82,6 +82,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Lowercase the repository name
+        # GHCR rejects uppercase image names. Computed once here rather than
+        # inline per step, which is how the scan step ended up with a reference
+        # the build step had already normalised.
+        run: echo "REPO_LC=$(echo "${IMAGE_REPO}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
       - id: tags
         name: Derive immutable tags
         # Three distinct builds, so the deployment test can prove a deploy
@@ -106,7 +112,7 @@ jobs:
 
       - name: Build and push three builds
         run: |
-          repo="ghcr.io/$(echo "${IMAGE_REPO}" | tr '[:upper:]' '[:lower:]')"
+          repo="ghcr.io/${REPO_LC}"
           for t in "${{ steps.tags.outputs.tag1 }}" "${{ steps.tags.outputs.tag2 }}" "${{ steps.tags.outputs.tag3 }}"; do
             docker build --build-arg "APP_VERSION=${t}" -t "${repo}:${t}" .
             docker push "${repo}:${t}"
@@ -115,7 +121,7 @@ jobs:
 
       - name: Assert the image does not run as root
         run: |
-          repo="ghcr.io/$(echo "${IMAGE_REPO}" | tr '[:upper:]' '[:lower:]')"
+          repo="ghcr.io/${REPO_LC}"
           user="$(docker image inspect "${repo}:${{ steps.tags.outputs.tag1 }}" --format '{{.Config.User}}')"
           echo "configured user: ${user:-<root>}"
           test "$user" = "1000:1000"
@@ -123,7 +129,7 @@ jobs:
       - name: Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}:${{ steps.tags.outputs.tag1 }}
+          image-ref: ghcr.io/${{ env.REPO_LC }}:${{ steps.tags.outputs.tag1 }}
           format: table
           exit-code: "1"
           severity: HIGH,CRITICAL
@@ -200,7 +206,7 @@ jobs:
         with:
           args: >-
             --no-progress --include-fragments
-            README.md ARCHITECTURE.md LESSONS.md SECURITY.md CONTRIBUTING.md ROADMAP.md
+            README.md ARCHITECTURE.md LESSONS.md SECURITY.md CONTRIBUTING.md ROADMAP.md CHANGELOG.md
           fail: true
 
       - name: Reject github.com blob URLs in image tags
