@@ -10,7 +10,7 @@
 # afterwards does not work either; a later layer writes whiteouts rather than
 # reclaiming bytes. Never adding it is the only way to remove it.
 
-FROM node:22-alpine AS node-source
+FROM node:26-alpine AS node-source
 
 # ── runtime ──────────────────────────────────────────────────────────────────
 FROM alpine:3.21 AS runtime
