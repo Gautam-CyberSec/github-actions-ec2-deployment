@@ -1,0 +1,74 @@
+name: Deploy to EC2
+
+# Deliberately manual and tag-gated. Automatic deployment on every push to main
+# is a choice, not a default — this repository is a reference, and a reader
+# copying it should have to opt in to that.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Immutable image tag to deploy (never 'latest')"
+        required: true
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: read
+
+# One deployment at a time. Two concurrent runs would race over which colour is
+# live and could leave the upstream pointing at a container the other run stopped.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: blue/green deploy
+    runs-on: ubuntu-latest
+
+    # Requires an environment approval, and is where the secrets are scoped.
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve the tag
+        id: t
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write deployment credentials
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          printf '%s\n' "$SSH_KEY" > /tmp/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > /tmp/known_hosts
+          # Never echo either file. Both are masked by Actions, but the habit of
+          # not printing credential material is worth more than the masking.
+
+      - name: Deploy
+        env:
+          IMAGE_REPO: ${{ github.repository }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ./deploy/deploy.sh \
+            --host "${{ secrets.DEPLOY_HOST }}" \
+            --tag "${{ steps.t.outputs.tag }}" \
+            --repo "$(echo "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')" \
+            --user "$DEPLOY_USER" \
+            --key /tmp/deploy_key \
+            --known-hosts /tmp/known_hosts
+
+      - name: Remove credentials
+        if: always()
+        run: shred -u /tmp/deploy_key /tmp/known_hosts 2>/dev/null || rm -f /tmp/deploy_key /tmp/known_hosts

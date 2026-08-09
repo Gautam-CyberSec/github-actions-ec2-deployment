@@ -1,0 +1,8 @@
+# Placeholder written by bootstrap.sh so nginx starts before the first deploy.
+# deploy.sh replaces this file; the "Active colour" marker is how it discovers
+# which colour is currently live.
+# Active colour: none
+upstream app {
+    server 127.0.0.1:3001;
+    keepalive 16;
+}

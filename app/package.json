@@ -1,0 +1,10 @@
+{
+  "name": "deploy-payload",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal service used as the deployment payload. Container hardening is demonstrated in docker-node-postgres-stack, not repeated here.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "main": "src/server.js",
+  "scripts": { "start": "node src/server.js" }
+}

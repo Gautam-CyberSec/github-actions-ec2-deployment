@@ -1,0 +1,12 @@
+actionlint
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Never commit key material, even locally generated test keys.
+*.pem
+*_key
+*_key.pub
+known_hosts
