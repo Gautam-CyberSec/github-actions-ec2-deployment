@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest a capability for the pipeline
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+    validations: { required: true }
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Could this affect live traffic during a deploy?
+      options: ["No", "Yes — it will need a guard and an e2e assertion", "Not sure"]
+    validations: { required: true }
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

@@ -1,0 +1,30 @@
+name: Bug report
+description: The pipeline behaved differently from what the documentation says
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Redact hostnames, IPs, usernames and image references before pasting output.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got.
+    validations: { required: true }
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Which stage
+      options: ["build", "push", "scan", "deploy — before the switch", "deploy — after the switch", "rollback", "other"]
+    validations: { required: true }
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: deploy.sh output or the workflow log, redacted.
+      render: shell
+  - type: input
+    id: host
+    attributes:
+      label: Target host OS
+      placeholder: "Ubuntu 24.04 on EC2 t3.micro"
